@@ -1,17 +1,23 @@
 DOCKER_IMAGE_NAME ?= mbiesekcribl/cribl
 DOCKER_IMAGE_TAG ?= 4.2.1
+BUILDER ?= cribl
 
-all: jemalloc-image mimalloc-image
+all: builder jemalloc-image mimalloc-image
+
+builder:
+	@if ! docker buildx inspect --bootstrap $(BUILDER) >/dev/null 2>&1; then \
+		docker buildx create --use --name $(BUILDER); \
+	fi
 
 jemalloc-image:
-	docker build -t $(DOCKER_IMAGE_NAME)-jemalloc:$(DOCKER_IMAGE_TAG) --file docker/jemalloc.Dockerfile .
+	docker buildx build --load --platform linux/amd64,linux/arm64 --file docker/jemalloc.Dockerfile --tag $(DOCKER_IMAGE_NAME)-jemalloc:$(DOCKER_IMAGE_TAG) .
 
 mimalloc-image:
-	docker build -t $(DOCKER_IMAGE_NAME)-mimalloc:$(DOCKER_IMAGE_TAG) --file docker/mimalloc.Dockerfile .
+	docker buildx build --load --platform linux/amd64,linux/arm64 --file docker/mimalloc.Dockerfile --tag $(DOCKER_IMAGE_NAME)-mimalloc:$(DOCKER_IMAGE_TAG) .
 
 push: all
-	docker push $(DOCKER_IMAGE_NAME)-jemalloc:$(DOCKER_IMAGE_TAG)
-	docker push $(DOCKER_IMAGE_NAME)-mimalloc:$(DOCKER_IMAGE_TAG)
+	docker buildx build --push --platform linux/amd64,linux/arm64 --file docker/jemalloc.Dockerfile --tag $(DOCKER_IMAGE_NAME)-jemalloc:$(DOCKER_IMAGE_TAG) .
+	docker buildx build --push --platform linux/amd64,linux/arm64 --file docker/mimalloc.Dockerfile --tag $(DOCKER_IMAGE_NAME)-mimalloc:$(DOCKER_IMAGE_TAG) .
 
 help:
 	@echo "Available targets:"
@@ -20,4 +26,4 @@ help:
 	@echo "  jemalloc-image  - Builds the Cribl Docker image with jemalloc support"
 	@echo "  mimalloc-image  - Builds the Cribl Docker image with mimalloc support"
 
-.PHONY: all help jemalloc-image mimalloc-image push
+.PHONY: all builder help jemalloc-image mimalloc-image push
