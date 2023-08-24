@@ -14,5 +14,7 @@ RUN apt-get update \
 
 ENV LD_PRELOAD="/usr/lib/libjemalloc.so.2"
 
+#ENV MALLOC_CONF="narenas:1,tcache_max:1024"
+
 ENTRYPOINT ["/sbin/entrypoint.sh"]
 CMD ["cribl"]
